@@ -5,8 +5,9 @@ services:
     image: ignatev/nsq
     command: /nsqlookupd
     ports:
-      - "4160"
-      - "4161"
+      - "4160:4160"
+      - "4161:4161"
+
   nsqd:
     container_name: nsqd
     image: ignatev/nsq
@@ -14,8 +15,9 @@ services:
     depends_on:
       - nsqlookupd
     ports:
-      - "4150"
-      - "4151"
+      - "4150:4150"
+      - "4151:4151"
+
   nsqadmin:
     container_name: nsqadmin
     image: ignatev/nsq
@@ -23,4 +25,20 @@ services:
     depends_on:
       - nsqlookupd  
     ports:
-      - "4171"
+      - "4171:4171"
+
+  mongodb:
+    container_name: mongodb_go
+    image: 'bitnami/mongodb:3.6'
+    networks:
+      sak_net:
+        aliases:
+          - mongo
+          - mongodb
+    ports:
+      - "27018:27017"
+    volumes:
+      - 'mongodb_data_go:/bitnami'
+
+volumes:
+  mongodb_data_go: {}
