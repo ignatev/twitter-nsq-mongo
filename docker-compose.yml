@@ -1,0 +1,26 @@
+version: '3'
+services:
+  nsqlookupd:
+    container_name: nsqlookupd
+    image: ignatev/nsq
+    command: /nsqlookupd
+    ports:
+      - "4160"
+      - "4161"
+  nsqd:
+    container_name: nsqd
+    image: ignatev/nsq
+    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160
+    depends_on:
+      - nsqlookupd
+    ports:
+      - "4150"
+      - "4151"
+  nsqadmin:
+    container_name: nsqadmin
+    image: ignatev/nsq
+    command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
+    depends_on:
+      - nsqlookupd  
+    ports:
+      - "4171"
