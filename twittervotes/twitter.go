@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"encoding/json"
+	"fmt"
 
 	"gopkg.in/mgo.v2"
 	"github.com/joeshaw/envdecode"
@@ -56,6 +57,7 @@ func setupTwitterAuth() {
 	if err := envdecode.Decode(&ts); err != nil {
 		log.Fatalln(err)
 	}
+	fmt.Println(ts)
 	creds = &oauth.Credentials{
 		Token: ts.AccessToken,
 		Secret: ts.AccessSecret,
@@ -105,7 +107,7 @@ type poll struct {
 }
 func loadoptions() ([]string, error) {
 	var options []string
-	iter := db.DB("ballots").C("polls").Find(nil).Iter()
+	iter := db.DB("ballots").C("pools").Find(nil).Iter()
 	var p poll
 	for iter.Next(&p) {
 		options = append(options, p.Options...)
@@ -120,6 +122,7 @@ type tweet struct {
 
 func readFromTwitter(votes chan<- string) {
 	options, err := loadoptions()
+	fmt.Println(options)
 	if err != nil {
 		log.Println("failed to lad options:", err)
 		return
@@ -131,7 +134,9 @@ func readFromTwitter(votes chan<- string) {
 	}
 	query := make(url.Values)
 	query.Set("track", strings.Join(options, ","))
+	fmt.Println(query)
 	req, err := http.NewRequest("POST", u.String(), strings.NewReader(query.Encode()))
+	fmt.Println(req)
 	if err != nil {
 		log.Println("creating filter request failed:", err)
 		return
@@ -143,9 +148,14 @@ func readFromTwitter(votes chan<- string) {
 	}
 	reader := resp.Body
 	decoder := json.NewDecoder(reader)
+	fmt.Println(reader)
+	fmt.Println(decoder)
 	for {
 		var t tweet
 		if err := decoder.Decode(&t); err != nil {
+			fmt.Println(t)
+			fmt.Println(decoder.Decode(&t))
+			fmt.Println(err)
 			break
 		}
 		for _, option := range options {
@@ -185,7 +195,7 @@ var nsqSettings struct { Address string `env:"NSQ_ADDRESS,required"` }
 
 func publishVotes(votes <-chan string) <-chan struct{} {
 	stopchan := make(chan struct{}, 1)
-	pub, err := nsq.NewProducer(nsqSettings.Address, nsq.NewConfig())
+	pub, err := nsq.NewProducer("localhost:4150", nsq.NewConfig())
 	if err != nil {
 		log.Println("there is an error in the vote channel")
 	}
